@@ -56,12 +56,24 @@ public class MainActivity extends Activity {
         // 插入记录
         // 法一
         db.insert("employee", null, contentValues);
+        contentValues.clear();
+        contentValues.put("name", "cj");
+        contentValues.put("birth", 1961);
+        contentValues.put("nativePlace", "jiangsu");
+        contentValues.put("address", "songjiang");
+        contentValues.put("phone", "12345678902");
+        contentValues.put("email", "cj@gmail.com");
+        contentValues.put("departmentId", 1);
+        db.insert("employee", null, contentValues);
         // 法二
+        db.execSQL("insert into employee ('name','birth','nativePlace','address','phone','email','departmentId') " +
+                                  "values('zzb', 1962, 'anhui', 'songjiang', '12345678903', 'zzb@gmail.com', 1)");
 
+        // 查询
         // 法一
 //        db.query();
         // 法二
-//        Cursor cursor = db.rawQuery("select * from employee", null);
+        Cursor cursor = db.rawQuery("select * from employee", null);
 //        cursor.get;
 //        while (cursor.){
 //
