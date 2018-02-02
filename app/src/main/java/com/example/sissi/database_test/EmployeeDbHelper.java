@@ -10,7 +10,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 public class EmployeeDbHelper extends SQLiteOpenHelper {
     private static String DB_NAME = "test_db";
-    private static int VERSION = 2;
+    private static int VERSION = 3; // 版本升级时递增该数字
     private String[][] versionedSqls = new String[][]{ // 不要直接修改已有的sql语句, 根据版本号添加对应的sql语句.
             {},// 版本0对应的sqls语句。仅用作占位，版本总是>=1
 
@@ -59,6 +59,7 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
 //        }
     }
 
+
     @Override
     public void onCreate(SQLiteDatabase db) {// 数据库创建
         PcTrace.p("-o->");
@@ -71,7 +72,7 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
 //        }
         // 卸载后重新安装有可能直接从版本0跳到版本2，而且不会走onUpgrade回调，这样，如果版本1的改动在onUpgrade中做的话，就会被丢失了！
         // 走该回调时数据库版本总是0
-        execSqls(db, 1, VERSION);
+        execSqls(db, 0, VERSION);
     }
 
     @Override
@@ -83,6 +84,19 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
     @Override
     public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         PcTrace.p("-o-> oldVersion=%s, newVersion=%s", oldVersion, newVersion);
+        // 一般不会降级,若降级可按如下步骤处理
+//        //第一、备份老表
+//        String alt_table="alert table t_message rename to t_message_bak";
+//        db.execSQL(alt_table);
+//        //第二、建立新表
+//        String crt_table = "create table t_message (id int primary key,,userName varchar(50),lastMessage varchar(50),datetime  varchar(50))";
+//        db.execSQL(crt_table);
+//        //第三、把老表中的数据挪到新表
+//        String cpy_table="insert into t_message select id,userName,lastMessage,datetime from t_message_bak";
+//        db.execSQL(cpy_table);
+//        //第四、删除备份表
+//        String drp_table = "drop table if exists t_message_bak";
+//        db.execSQL(drp_table);
     }
 
     @Override
@@ -91,9 +105,13 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
         PcTrace.p("-o->");
     }
 
-    // 执行从 fromVersion 到 toVersion(包含fromVersion和toVersion) 的sql语句
+    // 执行(fromVersion, toVersion]区间内的sql语句
     private void execSqls(SQLiteDatabase db, int fromVersion, int toVersion){
-        for (int i=fromVersion; i<=toVersion; ++i) {
+//        if (toVersion <= fromVersion){
+//            PcTrace.p(PcTrace.ERROR, "toVersion(%s) less than fromVersion(%s)", toVersion, fromVersion);
+//            return;
+//        }
+        for (int i=fromVersion+1; i<=toVersion; ++i) {
             for (int j = 0; j< versionedSqls[i].length; ++j) {
                 db.execSQL(versionedSqls[i][j]);
             }
