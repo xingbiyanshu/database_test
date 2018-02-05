@@ -1,6 +1,7 @@
 package com.example.sissi.database_test;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
@@ -10,7 +11,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 public class EmployeeDbHelper extends SQLiteOpenHelper {
     private static String DB_NAME = "test_db";
-    private static int VERSION = 3; // 版本升级时递增该数字
+    private static int VERSION = 2; // 版本升级时递增该数字
     private String[][] versionedSqls = new String[][]{ // 不要直接修改已有的sql语句, 根据版本号添加对应的sql语句.
             {},// 版本0对应的sqls语句。仅用作占位，版本总是>=1
 
@@ -41,6 +42,8 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
             },
     };
 
+    private SQLiteDatabase database;
+
     public EmployeeDbHelper(Context context){
         super(context, DB_NAME, null, VERSION);
     }
@@ -53,7 +56,7 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
     @Override
     public void onConfigure(SQLiteDatabase db) {
         super.onConfigure(db);
-        PcTrace.p("-o->");
+//        PcTrace.p("-->");
 //        if (0==db.getVersion()) {
 //            db.setVersion(1); // 创建数据库时即触发onUpgrade， 目的是让所有数据库创建及修改操作集中在onUpgrade内，避免误导后续维护者直接在onCreate回调内修改扩展数据库。
 //        }
@@ -62,7 +65,7 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {// 数据库创建
-        PcTrace.p("-o->");
+//        PcTrace.p("-->");
         //　创建表的合适时机是在数据库创建时，所以下面创建表．
         // 注意，覆盖安装（或在线升级）后由于数据库已经存在（不应该删除，因为有用户数据）故不会再走该回调。所以在初始表创建工作结束后，
         // 若随着需求的变更后续有修改数据库的操作（如添加修改删除表），则不应将相应的代码加在该回调内，而应该加在onUpgrade或onDowngrade内并修改版本号。
@@ -77,13 +80,13 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        PcTrace.p("-o-> oldVersion=%s, newVersion=%s", oldVersion, newVersion);
+//        PcTrace.p("--> oldVersion=%s, newVersion=%s", oldVersion, newVersion);
         execSqls(db, oldVersion, newVersion);
     }
 
     @Override
     public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        PcTrace.p("-o-> oldVersion=%s, newVersion=%s", oldVersion, newVersion);
+//        PcTrace.p("--> oldVersion=%s, newVersion=%s", oldVersion, newVersion);
         // 一般不会降级,若降级可按如下步骤处理
 //        //第一、备份老表
 //        String alt_table="alert table t_message rename to t_message_bak";
@@ -102,7 +105,8 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
     @Override
     public void onOpen(SQLiteDatabase db) {
         super.onOpen(db);
-        PcTrace.p("-o->");
+//        PcTrace.p("-->");
+        database = db;
     }
 
     // 执行(fromVersion, toVersion]区间内的sql语句
@@ -116,5 +120,15 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
                 db.execSQL(versionedSqls[i][j]);
             }
         }
+    }
+
+    public boolean isExist(String id){
+        Cursor cursor = database.rawQuery("select 1 from "+DB_NAME+" where id=? "+"limit 1", new String[]{id}); // select 1 而不是select *这样会更高效。limit 1也使得更高效。
+//        Cursor cursor = database.query("test_db", new String[]{"name"}, "id=?", new String[]{"1"},
+//                null, null, null, "1"); // 但我们应尽量使用query防止sql注入
+
+        boolean exists = cursor.getCount()>0;
+        cursor.close();
+        return exists;
     }
 }
