@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteDoneException;
+import android.database.sqlite.SQLiteStatement;
 import android.os.Bundle;
 
 import java.util.ArrayList;
@@ -51,49 +53,75 @@ public class MainActivity extends Activity {
         }
         // 插入记录
         PcTrace.p("--> insert 10000 record");
+        Cursor cursor;
         Cursor cursor1 = db.query("employee", null, null, null,
                 null, null, null, null);
-        PcTrace.p("record count=%s", cursor1.getCount());
+        PcTrace.p("-- record count=%s", cursor1.getCount());
         cursor1.close();
+
+//        db.beginTransaction();
+        //判断是否存在某条记录的高效方式: select 1 where exists(select * from employee where name like '?' limit 1)
+        SQLiteStatement sqLiteStatement = db.compileStatement("select 1 from employee where name like ? limit 1");
+        PcTrace.p("-- sqLiteStatement = %s", sqLiteStatement);
+        boolean done = false;
         for (int i=0; i<10000; ++i){
 //            for (ContentValues values : contentValuesList){
 //            Cursor cursor = db.query("employee", new String[]{"name"}, "id=?", new String[]{"3000"},
 //                    null, null, null, "1");
-            /*Cursor cursor = */db.query("employee", null, "id=? or name like ?", new String[]{""+i, "%na%"},
-                    null, null, null, "1");
+//            /*Cursor cursor = */db.query("employee", null, "id=? or name like ?", new String[]{""+i, "%na%"},
+//                    null, null, null, "1");
 //            PcTrace.p("count=%s", cursor.getCount());
 //            cursor.close();
-//            Cursor cursor = db.query("employee", null, "id=?", new String[]{"1"},
+
+
+            sqLiteStatement.clearBindings();
+            sqLiteStatement.bindString(1, "%"+"name"+"%");
+            try {
+                long ret = sqLiteStatement.simpleQueryForLong();
+                if (!done) {
+                    PcTrace.p("ret=%s", ret);
+                    done = true;
+                }
+            }catch (SQLiteDoneException exception){
+                PcTrace.p("SQLiteDoneException");
+            }finally {
+//                PcTrace.p("finally");
+            }
+
+
+//            cursor = db.query("employee", new String[]{"name"}, "name=?", new String[]{"name"+i},
 //                    null, null, null, "1");
-//            if (cursor.moveToFirst()) {
-//                cursor.close();
-//                continue;
+//            if (cursor.moveToNext()) {
+////                cursor.close();
+////                continue;
 //            }else{
 //                PcTrace.p("-- insert ");
 //            }
 //            cursor.close();
-//
+
 //            db.insert("employee", null, values);
         }
+//        db.setTransactionSuccessful();
+//        db.endTransaction();
         PcTrace.p("<-- insert 10000 record");
 
-        // 判断记录是否存在
-        Cursor cursor;
-        PcTrace.p("--> tell if record exists, method 2");
-        cursor = db.query("employee", null, "id=?", new String[]{"7000"},
-                null, null, null, null);
-        PcTrace.p("<-- tell if record exists, method 2");
-        cursor.close();
-
-        PcTrace.p("--> tell if record exists, method 1");
-        cursor = db.query("employee", new String[]{"name"}, "id=?", new String[]{"7000"},
-                null, null, null, "1");
-        PcTrace.p("<-- tell if record exists, method 1");
-        if (cursor.moveToFirst()){
-            PcTrace.p("record id=1 exists, name=%s", cursor.getString(0));
-        }else{
-            PcTrace.p("record id=1 not exists");
-        }
+//        // 判断记录是否存在
+//        Cursor cursor;
+//        PcTrace.p("--> tell if record exists, method 2");
+//        cursor = db.query("employee", null, "id=?", new String[]{"7000"},
+//                null, null, null, null);
+//        PcTrace.p("<-- tell if record exists, method 2");
+//        cursor.close();
+//
+//        PcTrace.p("--> tell if record exists, method 1");
+//        cursor = db.query("employee", new String[]{"name"}, "id=?", new String[]{"7000"},
+//                null, null, null, "1");
+//        PcTrace.p("<-- tell if record exists, method 1");
+//        if (cursor.moveToFirst()){
+//            PcTrace.p("record id=1 exists, name=%s", cursor.getString(0));
+//        }else{
+//            PcTrace.p("record id=1 not exists");
+//        }
 
 
         // 插入记录
@@ -137,7 +165,7 @@ public class MainActivity extends Activity {
 //
 //        }
 
-        cursor.close();
+//        cursor.close();
         employeeDbHelper.close();
     }
 
