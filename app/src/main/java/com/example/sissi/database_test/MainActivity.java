@@ -63,24 +63,35 @@ public class MainActivity extends Activity {
             for (int i=0; i<contentValuesList.size(); ++i) {
                 if (0==i%1000){
                     final int finalI = i;
-                    new Thread(){
+                    new Thread(){ // 多线程方式插入
                         @Override
                         public void run() {
                             db.beginTransaction();  // 批量插入时开启事务能显著提高效率　
                             try {
                                 int j;
                                 for (j = finalI; j < finalI + 1000; ++j) {
-                                    DbUtils.updateOrInsert(db, "employee", contentValuesList.get(j),
-                                            "name=?", new String[]{contentValuesList.get(j).getAsString("name")});
+//                                    DbUtils.updateOrInsert(db, "employee", contentValuesList.get(j),
+//                                            "name=?", new String[]{contentValuesList.get(j).getAsString("name")});
                                 }
-
-                                if (9999==j) {
+                                if (10000==j) {
                                     Cursor cursor = db.query("employee", null, null, null,
-                                            null, null, null, null);
+                                            null, null, null, "9");
                                     PcTrace.p("count=%s", cursor.getCount());
 
                                     while (cursor.moveToNext()) {
                                         PcTrace.p("record name=%s", cursor.getString(cursor.getColumnIndex(colName)));
+                                    }
+                                    cursor.close();
+
+                                    for (int k=0; k<3; ++k) { // 批量查询,第一次返回“满足条件的结果集里的”1到3号记录,第二次返回4到6，第三次返回7到9
+                                        cursor = db.query("employee", null, null, null,
+                                                null, null, null, k*3+","+"3"/*"3 offset "+k*3*/);
+                                        PcTrace.p("count=%s", cursor.getCount());
+
+                                        while (cursor.moveToNext()) {
+                                            PcTrace.p("record name=%s", cursor.getString(cursor.getColumnIndex(colName)));
+                                        }
+                                        cursor.close();
                                     }
                                 }
 
@@ -109,13 +120,13 @@ public class MainActivity extends Activity {
 
         // 查询
         // 法一
-        cursor = db.query("employee", null, /*"name like '%name999%'"*/null, /*new String[]{"%name%"}*/null,
-                null, null, null, null);
-        PcTrace.p("count=%s", cursor.getCount());
-
-        while (cursor.moveToNext()){
-            PcTrace.p("record name=%s", cursor.getString(cursor.getColumnIndex(colName)));
-        }
+//        cursor = db.query("employee", null, /*"name like '%name999%'"*/null, /*new String[]{"%name%"}*/null,
+//                null, null, null, null);
+//        PcTrace.p("count=%s", cursor.getCount());
+//
+//        while (cursor.moveToNext()){
+//            PcTrace.p("record name=%s", cursor.getString(cursor.getColumnIndex(colName)));
+//        }
 //        if (cursor.moveToFirst()){
 //            PcTrace.p("record name = %s already exists, update it", cursor.getString(0));
 //        }else{
@@ -138,8 +149,8 @@ public class MainActivity extends Activity {
 //
 //        }
 
-        cursor.close();
-        employeeDbHelper.close();
+//        cursor.close();
+//        employeeDbHelper.close();
     }
 
 }

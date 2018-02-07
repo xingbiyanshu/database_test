@@ -1,6 +1,7 @@
 package com.example.sissi.database_test;
 
 import android.content.ContentValues;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDoneException;
 import android.database.sqlite.SQLiteStatement;
@@ -53,9 +54,7 @@ public class DbUtils {
      * 此方法总是会先查询表中是否已存在记录.若表规模较大则耗时较多.
      * 若允许, 可以考虑先全部删除老记录再insert所有的新纪录(开启事务)的方式以提升效率.
      * */
-    static int count=0;
     public static void updateOrInsert(SQLiteDatabase db, String table, ContentValues contentValues, String whereClause, String[] whereArgs){
-        PcTrace.p("updateOrInsertcount=%s", ++count);
         if (exists(db, table, whereClause, whereArgs)){
 //            PcTrace.p("--update");
             db.update(table, contentValues, whereClause, whereArgs);
@@ -64,4 +63,5 @@ public class DbUtils {
             db.insert(table, null, contentValues);
         }
     }
+
 }
