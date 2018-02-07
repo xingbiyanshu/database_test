@@ -54,59 +54,75 @@ public class MainActivity extends Activity {
             contentValuesList.add(contentValues);
         }
 
+//        db.setMaximumSize(1024*1024); // 设置数据库大小上限
+
         // 插入记录
         PcTrace.p("--> insert 10000 record");
 
-//        db.beginTransaction();  // 批量插入时开启事务能显著提高效率　
-        try {
-//            for (ContentValues values : contentValuesList) {
-            for (int i=0; i<contentValuesList.size(); ++i) {
-                if (0==i%1000){
-                    final int finalI = i;
-                    new Thread(){ // 多线程方式插入
-                        @Override
-                        public void run() {
-                            db.beginTransaction();  // 批量插入时开启事务能显著提高效率　
-                            try {
-                                int j;
-                                for (j = finalI; j < finalI + 1000; ++j) {
+////        db.beginTransaction();  // 批量插入时开启事务能显著提高效率　
+//        try {
+////            for (ContentValues values : contentValuesList) {
+//            for (int i=0; i<contentValuesList.size(); ++i) {
+//                if (0==i%1000){
+//                    final int finalI = i;
+//                    new Thread(){ // 多线程方式插入
+//                        @Override
+//                        public void run() {
+//                            db.beginTransaction();  // 批量插入时开启事务能显著提高效率　
+//                            try {
+//                                int j;
+//                                for (j = finalI; j < finalI + 1000; ++j) {
 //                                    DbUtils.updateOrInsert(db, "employee", contentValuesList.get(j),
 //                                            "name=?", new String[]{contentValuesList.get(j).getAsString("name")});
-                                }
-                                if (10000==j) {
-                                    Cursor cursor = db.query("employee", null, null, null,
-                                            null, null, null, "9");
-                                    PcTrace.p("count=%s", cursor.getCount());
+//                                }
+////                                if (10000==j) {
+////                                    Cursor cursor = db.query("employee", null, null, null,
+////                                            null, null, null, "9");
+////                                    PcTrace.p("count=%s", cursor.getCount());
+////
+////                                    while (cursor.moveToNext()) {
+////                                        PcTrace.p("record name=%s", cursor.getString(cursor.getColumnIndex(colName)));
+////                                    }
+////                                    cursor.close();
+////
+////                                    for (int k=0; k<3; ++k) { // 批量查询,第一次返回“满足条件的结果集里的”1到3号记录,第二次返回4到6，第三次返回7到9
+////                                        cursor = db.query("employee", null, null, null,
+////                                                null, null, null, k*3+","+"3"/*"3 offset "+k*3*/);
+////                                        PcTrace.p("count=%s", cursor.getCount());
+////
+////                                        while (cursor.moveToNext()) {
+////                                            PcTrace.p("record name=%s", cursor.getString(cursor.getColumnIndex(colName)));
+////                                        }
+////                                        cursor.close();
+////                                    }
+////                                }
+//
+//                                db.setTransactionSuccessful();
+//                            }finally {
+//                                db.endTransaction();
+//                            }
+//                        }
+//                    }.start();
+//                }
+////                DbUtils.updateOrInsert(db, "employee", values, "name=?", new String[]{values.getAsString("name")});
+//            }
+////            db.setTransactionSuccessful();
+//        }finally { // try finally的方式是事务的标准写法　
+////            db.endTransaction();
+//        }
 
-                                    while (cursor.moveToNext()) {
-                                        PcTrace.p("record name=%s", cursor.getString(cursor.getColumnIndex(colName)));
-                                    }
-                                    cursor.close();
-
-                                    for (int k=0; k<3; ++k) { // 批量查询,第一次返回“满足条件的结果集里的”1到3号记录,第二次返回4到6，第三次返回7到9
-                                        cursor = db.query("employee", null, null, null,
-                                                null, null, null, k*3+","+"3"/*"3 offset "+k*3*/);
-                                        PcTrace.p("count=%s", cursor.getCount());
-
-                                        while (cursor.moveToNext()) {
-                                            PcTrace.p("record name=%s", cursor.getString(cursor.getColumnIndex(colName)));
-                                        }
-                                        cursor.close();
-                                    }
-                                }
-
-                                db.setTransactionSuccessful();
-                            }finally {
-                                db.endTransaction();
-                            }
-                        }
-                    }.start();
-                }
+//        db.beginTransaction();
+//        try {
+//            for (ContentValues values : contentValuesList) {
 //                DbUtils.updateOrInsert(db, "employee", values, "name=?", new String[]{values.getAsString("name")});
-            }
+//            }
 //            db.setTransactionSuccessful();
-        }finally { // try finally的方式是事务的标准写法　
+//        }finally {
 //            db.endTransaction();
+//        }
+
+        for (int i=0; i<10000; ++i){
+            DbUtils.exists(db, "employee", "name=?", new String[]{"name"+i});
         }
         PcTrace.p("<-- insert 10000 record");
 
