@@ -30,8 +30,10 @@ public class MainActivity extends Activity {
     private void dbOp(){
         EmployeeDbHelper employeeDbHelper = new EmployeeDbHelper(this);
 
-        SQLiteDatabase db = employeeDbHelper.getWritableDatabase();
-        String colName = "name";
+        Cursor cursor;
+
+        final SQLiteDatabase db = employeeDbHelper.getWritableDatabase();
+        final String colName = "name";
         String colBirth = "birth";
         String colNativePlace = "nativePlace";
         String colAddress = "address";
@@ -39,7 +41,7 @@ public class MainActivity extends Activity {
         String colEmail = "email";
         String colDepartmentId = "departmentId";
 
-        List<ContentValues> contentValuesList = new ArrayList<>();
+        final List<ContentValues> contentValuesList = new ArrayList<>();
         for (int i=0; i<10000; ++i){
             ContentValues contentValues = new ContentValues();
             contentValues.put("name", colName+i);
@@ -51,107 +53,78 @@ public class MainActivity extends Activity {
             contentValues.put("departmentId", 1);
             contentValuesList.add(contentValues);
         }
+
         // 插入记录
         PcTrace.p("--> insert 10000 record");
-        Cursor cursor;
-        Cursor cursor1 = db.query("employee", null, null, null,
-                null, null, null, null);
-        PcTrace.p("-- record count=%s", cursor1.getCount());
-        cursor1.close();
 
-//        db.beginTransaction();
-        //判断是否存在某条记录的高效方式: select 1 where exists(select * from employee where name like '?' limit 1)
-        SQLiteStatement sqLiteStatement = db.compileStatement("select 1 from employee where name like ? limit 1");
-        PcTrace.p("-- sqLiteStatement = %s", sqLiteStatement);
-        boolean done = false;
-        for (int i=0; i<10000; ++i){
-//            for (ContentValues values : contentValuesList){
-//            Cursor cursor = db.query("employee", new String[]{"name"}, "id=?", new String[]{"3000"},
-//                    null, null, null, "1");
-//            /*Cursor cursor = */db.query("employee", null, "id=? or name like ?", new String[]{""+i, "%na%"},
-//                    null, null, null, "1");
-//            PcTrace.p("count=%s", cursor.getCount());
-//            cursor.close();
+//        db.beginTransaction();  // 批量插入时开启事务能显著提高效率　
+        try {
+//            for (ContentValues values : contentValuesList) {
+            for (int i=0; i<contentValuesList.size(); ++i) {
+                if (0==i%1000){
+                    final int finalI = i;
+                    new Thread(){
+                        @Override
+                        public void run() {
+                            db.beginTransaction();  // 批量插入时开启事务能显著提高效率　
+                            try {
+                                int j;
+                                for (j = finalI; j < finalI + 1000; ++j) {
+                                    DbUtils.updateOrInsert(db, "employee", contentValuesList.get(j),
+                                            "name=?", new String[]{contentValuesList.get(j).getAsString("name")});
+                                }
 
+                                if (9999==j) {
+                                    Cursor cursor = db.query("employee", null, null, null,
+                                            null, null, null, null);
+                                    PcTrace.p("count=%s", cursor.getCount());
 
-            sqLiteStatement.clearBindings();
-            sqLiteStatement.bindString(1, "%"+"name"+"%");
-            try {
-                long ret = sqLiteStatement.simpleQueryForLong();
-                if (!done) {
-                    PcTrace.p("ret=%s", ret);
-                    done = true;
+                                    while (cursor.moveToNext()) {
+                                        PcTrace.p("record name=%s", cursor.getString(cursor.getColumnIndex(colName)));
+                                    }
+                                }
+
+                                db.setTransactionSuccessful();
+                            }finally {
+                                db.endTransaction();
+                            }
+                        }
+                    }.start();
                 }
-            }catch (SQLiteDoneException exception){
-                PcTrace.p("SQLiteDoneException");
-            }finally {
-//                PcTrace.p("finally");
+//                DbUtils.updateOrInsert(db, "employee", values, "name=?", new String[]{values.getAsString("name")});
             }
-
-
-//            cursor = db.query("employee", new String[]{"name"}, "name=?", new String[]{"name"+i},
-//                    null, null, null, "1");
-//            if (cursor.moveToNext()) {
-////                cursor.close();
-////                continue;
-//            }else{
-//                PcTrace.p("-- insert ");
-//            }
-//            cursor.close();
-
-//            db.insert("employee", null, values);
+//            db.setTransactionSuccessful();
+        }finally { // try finally的方式是事务的标准写法　
+//            db.endTransaction();
         }
-//        db.setTransactionSuccessful();
-//        db.endTransaction();
         PcTrace.p("<-- insert 10000 record");
 
-//        // 判断记录是否存在
-//        Cursor cursor;
-//        PcTrace.p("--> tell if record exists, method 2");
-//        cursor = db.query("employee", null, "id=?", new String[]{"7000"},
-//                null, null, null, null);
-//        PcTrace.p("<-- tell if record exists, method 2");
-//        cursor.close();
-//
-//        PcTrace.p("--> tell if record exists, method 1");
-//        cursor = db.query("employee", new String[]{"name"}, "id=?", new String[]{"7000"},
-//                null, null, null, "1");
-//        PcTrace.p("<-- tell if record exists, method 1");
-//        if (cursor.moveToFirst()){
-//            PcTrace.p("record id=1 exists, name=%s", cursor.getString(0));
-//        }else{
-//            PcTrace.p("record id=1 not exists");
-//        }
 
-
-        // 插入记录
-        // 法一
+//        // 插入记录
+//        // 法一
 //        db.insert("employee", null, contentValues);
-//        contentValues.clear();
-//        contentValues.put("name", "cj");
-//        contentValues.put("birth", 1961);
-//        contentValues.put("nativePlace", "jiangsu");
-//        contentValues.put("address", "songjiang");
-//        contentValues.put("phone", "12345678902");
-//        contentValues.put("email", "cj@gmail.com");
-//        contentValues.put("departmentId", 1);
-//        db.insert("employee", null, contentValues);
-        // 法二
+//        // 法二
 //        db.execSQL("insert into employee ('name','birth','nativePlace','address','phone','email','departmentId') " +
 //                                  "values('zzb', 1962, 'anhui', 'songjiang', '12345678903', 'zzb@gmail.com', 1)");
 
         // 查询
         // 法一
-//        Cursor cursor = db.query("test_db", new String[]{"name"}, "id=?", new String[]{"1"},
-//                null, null, null, "1");
+        cursor = db.query("employee", null, /*"name like '%name999%'"*/null, /*new String[]{"%name%"}*/null,
+                null, null, null, null);
+        PcTrace.p("count=%s", cursor.getCount());
+
+        while (cursor.moveToNext()){
+            PcTrace.p("record name=%s", cursor.getString(cursor.getColumnIndex(colName)));
+        }
 //        if (cursor.moveToFirst()){
 //            PcTrace.p("record name = %s already exists, update it", cursor.getString(0));
-//            db.update("test_db", contentValues, )
 //        }else{
 //
 //        }
-//        // 法二
-//        Cursor cursor = db.rawQuery("select id from employee where name=gf limit 1", null);
+        // 法二
+//        cursor = db.rawQuery("select id from employee where name=gf limit 1", null);
+
+
         int type;
 //        for (int i=0; i<cursor.getColumnCount(); ++i){
 //            type = cursor.getType(i);
@@ -165,7 +138,7 @@ public class MainActivity extends Activity {
 //
 //        }
 
-//        cursor.close();
+        cursor.close();
         employeeDbHelper.close();
     }
 
