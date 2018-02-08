@@ -96,8 +96,9 @@ public class MainActivity extends Activity {
         // 查询部门
         PcTrace.p("--> query department");
         Cursor cursor;
-        cursor = db.query(true, "department", /*new String[]{"id", "parentDepartmentId", ""}*/null, null, null,
-                null, null, null, "9");
+//        cursor = db.query(true, "department", /*new String[]{"id", "parentDepartmentId", ""}*/null, null, null,
+//                null, null, null, "9"); // 使用query，更安全，防止sql注入。
+        cursor = db.rawQuery("select * from department limit 9", null); // 使用rawQuery更灵活方便
         while (cursor.moveToNext()) {
             PcTrace.p("(%s,%s,%s,%s)", cursor.getString(0), cursor.getString(1),
                     cursor.getString(2),cursor.getString(3));
@@ -147,7 +148,7 @@ public class MainActivity extends Activity {
 //            for (int i=0; i<empCvs.size(); ++i) {
 //                if (0==i%1000){
 //                    final int finalI = i;
-//                    new Thread(){ // 多线程方式插入
+//                    new Thread(){ // 多线程方式插入，考察数据库对多线程的适应性以及多线程和事务的关系
 //                        @Override
 //                        public void run() {
 //                            db.beginTransaction();  // 批量插入时开启事务能显著提高效率　
@@ -194,60 +195,8 @@ public class MainActivity extends Activity {
 ////            db.endTransaction();
 //        }
 
-//        db.beginTransaction();
-//        try {
-//            for (ContentValues values : empCvs) {
-//                DbUtils.updateOrInsert(db, "employee", values, "name=?", new String[]{values.getAsString("name")});
-//            }
-//            db.setTransactionSuccessful();
-//        }finally {
-//            db.endTransaction();
-//        }
-
-//        for (int i=0; i<10000; ++i){
-//            DbUtils.exists(db, "employee", "name=?", new String[]{"name"+i});
-//        }
 
 //        PcTrace.p("<-- insert 10000 record");
-
-
-//        // 插入记录
-//        // 法一
-//        db.insert("employee", null, contentValues);
-//        // 法二
-//        db.execSQL("insert into employee ('name','birth','nativePlace','address','phone','email','departmentId') " +
-//                                  "values('zzb', 1962, 'anhui', 'songjiang', '12345678903', 'zzb@gmail.com', 1)");
-
-        // 查询
-        // 法一
-//        cursor = db.query("employee", null, /*"name like '%name999%'"*/null, /*new String[]{"%name%"}*/null,
-//                null, null, null, null);
-//        PcTrace.p("count=%s", cursor.getCount());
-//
-//        while (cursor.moveToNext()){
-//            PcTrace.p("record name=%s", cursor.getString(cursor.getColumnIndex(colName)));
-//        }
-//        if (cursor.moveToFirst()){
-//            PcTrace.p("record name = %s already exists, update it", cursor.getString(0));
-//        }else{
-//
-//        }
-        // 法二
-//        cursor = db.rawQuery("select id from employee where name=gf limit 1", null);
-
-
-//        int type;
-//        for (int i=0; i<cursor.getColumnCount(); ++i){
-//            type = cursor.getType(i);
-//            if (Cursor.FIELD_TYPE_INTEGER == type){
-//                cursor.getInt(i);
-//            } else if (Cursor.FIELD_TYPE_STRING == type){
-//                cursor.getString(i);
-//            }
-//        }
-//        while (cursor.){
-//
-//        }
 
 //        cursor.close();
         employeeDbHelper.close();
