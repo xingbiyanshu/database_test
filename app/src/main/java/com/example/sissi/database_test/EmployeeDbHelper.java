@@ -38,9 +38,29 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
         {
             "alter table employee add column brief char(200);"
         },
-        // 版本3。　
+        // 版本3，为列name创建索引。该索引能大大提高以列name为检索条件的检索效率(如where name=?)　
         {
             "create index if not exists nameIdx on employee(name);"
+        },
+        // 版本4，为department添加人数字段。
+        {
+            "alter table department add column memberNum int default 0 check(0<=memberNum);"
+        },
+        // 版本5, 为employee添加触发器,使得employee增删改时department的人数字段联动变化. 注意department的memberNum字段不能为null，否则人数更新会失败。
+        {
+            " create trigger if not exists insertEmpTrig after insert on employee\n" +
+                    " begin\n" +
+                    " update department set memberNum=memberNum+1 where id=new.departmentId;\n" +
+                    " end;",
+            " create trigger if not exists deleteEmpTrig after delete on employee\n" +
+                    " begin\n" +
+                    " update department set memberNum=memberNum-1 where id=old.departmentId;\n" +
+                    " end;",
+            " create trigger if not exists updateEmpTrig after update of departmentId on employee\n" +
+                    " begin\n" +
+                    " update department set memberNum=memberNum-1 where id=old.departmentId;\n" +
+                    " update department set memberNum=memberNum+1 where id=new.departmentId;\n" +
+                    " end;",
         },
     };
 

@@ -29,40 +29,122 @@ public class MainActivity extends Activity {
 
     private void dbOp(){
         EmployeeDbHelper employeeDbHelper = new EmployeeDbHelper(this);
-
-        Cursor cursor;
-
         final SQLiteDatabase db = employeeDbHelper.getWritableDatabase();
-        final String colName = "name";
-        String colBirth = "birth";
-        String colNativePlace = "nativePlace";
-        String colAddress = "address";
-        String colPhone = "phone";
-        String colEmail = "email";
-        String colDepartmentId = "departmentId";
 
-        final List<ContentValues> contentValuesList = new ArrayList<>();
+        final List<ContentValues> empCvs = new ArrayList<>();
         for (int i=0; i<10000; ++i){
             ContentValues contentValues = new ContentValues();
-            contentValues.put("name", colName+i);
-            contentValues.put("birth", 1960);
-            contentValues.put("nativePlace", colNativePlace+i);
-            contentValues.put("address", colAddress+i);
+            contentValues.put("id", i+1);
+            contentValues.put("name", "emp_"+(i%9900+1));
+            contentValues.put("birth", 1960+i%40);
+            contentValues.put("nativePlace", "nativePlace_"+i%100);
+            contentValues.put("address", "address_"+i%100);
             contentValues.put("phone", ""+12345600000L+i);
-            contentValues.put("email", colEmail+i+"@gmail.com");
-            contentValues.put("departmentId", 1);
-            contentValuesList.add(contentValues);
+            contentValues.put("email", "email_"+i+"@gmail.com");
+            contentValues.put("departmentId", i%4+1);
+            empCvs.add(contentValues);
         }
+
+        final List<ContentValues> depCvs = new ArrayList<>();
+        for (int i=0; i<1000; ++i){
+            ContentValues contentValues = new ContentValues();
+            contentValues.put("id", i+1);
+            contentValues.put("name", "dep_"+(i+1));
+            contentValues.put("parentDepartmentId", i%10);
+            contentValues.put("memberNum", 0);
+            depCvs.add(contentValues);
+        }
+
 
 //        db.setMaximumSize(1024*1024); // 设置数据库大小上限
 
+        // 插入部门(先插入部门, 这样能保证插入人员时触发器能正确更新部门下成员数) // TODO 可改进使得不关注先后顺序,在部门中加入触发器计算人数.
+        PcTrace.p("--> insert 1000 departments");
+        db.beginTransaction();
+        try{
+            for (ContentValues cv : depCvs){
+                DbUtils.updateOrInsert(db, "department", cv,
+                        "id=?", new String[]{cv.getAsString("id")});
+            }
+            db.setTransactionSuccessful();
+        }finally {
+            db.endTransaction();
+        }
+
+        // 插入员工
+        PcTrace.p("--> insert 10000 employees");
+        db.beginTransaction();
+        try {
+            for (ContentValues cv : empCvs){
+                DbUtils.updateOrInsert(db, "employee", cv,
+                        "id=?", new String[]{cv.getAsString("id")});
+            }
+
+            db.setTransactionSuccessful();
+        }finally {
+            db.endTransaction();
+        }
+
+        // 删除员工(注意观察部门人数的变化)
+        db.delete("employee", "id=1", null);
+
+        // 更新员工(注意观察部门人数的变化)
+        ContentValues tmpCv = new ContentValues();
+        tmpCv.put("departmentId", 2);
+        db.update("employee", tmpCv, "id=3", null);
+
+        // 查询部门
+        PcTrace.p("--> query department");
+        Cursor cursor;
+        cursor = db.query(true, "department", /*new String[]{"id", "parentDepartmentId", ""}*/null, null, null,
+                null, null, null, "9");
+        while (cursor.moveToNext()) {
+            PcTrace.p("(%s,%s,%s,%s)", cursor.getString(0), cursor.getString(1),
+                    cursor.getString(2),cursor.getString(3));
+        }
+        cursor.close();
+
+        // 批量查询员工
+        PcTrace.p("--> batch query 9 employees");
+        cursor = db.query("employee", null, null, null,
+                null, null, null, "9");
+        PcTrace.p("count=%s", cursor.getCount());
+//        int nameIdx = cursor.getColumnIndex("name");
+
+        while (cursor.moveToNext()) {
+            PcTrace.p("(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", cursor.getString(0),
+                    cursor.getString(1), cursor.getString(2),
+                    cursor.getString(3), cursor.getString(4),
+                    cursor.getString(5), cursor.getString(6),
+                    cursor.getString(7), cursor.getString(8),
+                    cursor.getString(9));
+        }
+        cursor.close();
+
+        for (int k=0; k<3; ++k) { // 批量查询,第一次返回“满足条件的结果集里的”1到3号记录,第二次返回4到6，第三次返回7到9
+            cursor = db.query("employee", null, null, null,
+                    null, null, null, k*3+","+"3"/*"3 offset "+k*3*/);
+            PcTrace.p("count=%s", cursor.getCount());
+
+            while (cursor.moveToNext()) {
+                PcTrace.p("(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", cursor.getString(0),
+                        cursor.getString(1), cursor.getString(2),
+                        cursor.getString(3), cursor.getString(4),
+                        cursor.getString(5), cursor.getString(6),
+                        cursor.getString(7), cursor.getString(8),
+                        cursor.getString(9));
+            }
+            cursor.close();
+        }
+
+
         // 插入记录
-        PcTrace.p("--> insert 10000 record");
+//        PcTrace.p("--> insert 10000 record");
 
 ////        db.beginTransaction();  // 批量插入时开启事务能显著提高效率　
 //        try {
-////            for (ContentValues values : contentValuesList) {
-//            for (int i=0; i<contentValuesList.size(); ++i) {
+////            for (ContentValues values : empCvs) {
+//            for (int i=0; i<empCvs.size(); ++i) {
 //                if (0==i%1000){
 //                    final int finalI = i;
 //                    new Thread(){ // 多线程方式插入
@@ -72,30 +154,31 @@ public class MainActivity extends Activity {
 //                            try {
 //                                int j;
 //                                for (j = finalI; j < finalI + 1000; ++j) {
-//                                    DbUtils.updateOrInsert(db, "employee", contentValuesList.get(j),
-//                                            "name=?", new String[]{contentValuesList.get(j).getAsString("name")});
+//                                    DbUtils.updateOrInsert(db, "employee", empCvs.get(j),
+//                                            "name=?", new String[]{empCvs.get(j).getAsString("name")});
 //                                }
-////                                if (10000==j) {
-////                                    Cursor cursor = db.query("employee", null, null, null,
-////                                            null, null, null, "9");
-////                                    PcTrace.p("count=%s", cursor.getCount());
-////
-////                                    while (cursor.moveToNext()) {
-////                                        PcTrace.p("record name=%s", cursor.getString(cursor.getColumnIndex(colName)));
-////                                    }
-////                                    cursor.close();
-////
-////                                    for (int k=0; k<3; ++k) { // 批量查询,第一次返回“满足条件的结果集里的”1到3号记录,第二次返回4到6，第三次返回7到9
-////                                        cursor = db.query("employee", null, null, null,
-////                                                null, null, null, k*3+","+"3"/*"3 offset "+k*3*/);
-////                                        PcTrace.p("count=%s", cursor.getCount());
-////
-////                                        while (cursor.moveToNext()) {
-////                                            PcTrace.p("record name=%s", cursor.getString(cursor.getColumnIndex(colName)));
-////                                        }
-////                                        cursor.close();
-////                                    }
-////                                }
+//                                if (10000==j) {
+//                                    Cursor cursor = db.query("employee", null, null, null,
+//                                            null, null, null, "9");
+//                                    PcTrace.p("count=%s", cursor.getCount());
+//                                    int nameIdx = cursor.getColumnIndex("name");
+//
+//                                    while (cursor.moveToNext()) {
+//                                        PcTrace.p("record name=%s", cursor.getString(nameIdx));
+//                                    }
+//                                    cursor.close();
+//
+//                                    for (int k=0; k<3; ++k) { // 批量查询,第一次返回“满足条件的结果集里的”1到3号记录,第二次返回4到6，第三次返回7到9
+//                                        cursor = db.query("employee", null, null, null,
+//                                                null, null, null, k*3+","+"3"/*"3 offset "+k*3*/);
+//                                        PcTrace.p("count=%s", cursor.getCount());
+//
+//                                        while (cursor.moveToNext()) {
+//                                            PcTrace.p("record name=%s", cursor.getString(nameIdx));
+//                                        }
+//                                        cursor.close();
+//                                    }
+//                                }
 //
 //                                db.setTransactionSuccessful();
 //                            }finally {
@@ -113,7 +196,7 @@ public class MainActivity extends Activity {
 
 //        db.beginTransaction();
 //        try {
-//            for (ContentValues values : contentValuesList) {
+//            for (ContentValues values : empCvs) {
 //                DbUtils.updateOrInsert(db, "employee", values, "name=?", new String[]{values.getAsString("name")});
 //            }
 //            db.setTransactionSuccessful();
@@ -121,10 +204,11 @@ public class MainActivity extends Activity {
 //            db.endTransaction();
 //        }
 
-        for (int i=0; i<10000; ++i){
-            DbUtils.exists(db, "employee", "name=?", new String[]{"name"+i});
-        }
-        PcTrace.p("<-- insert 10000 record");
+//        for (int i=0; i<10000; ++i){
+//            DbUtils.exists(db, "employee", "name=?", new String[]{"name"+i});
+//        }
+
+//        PcTrace.p("<-- insert 10000 record");
 
 
 //        // 插入记录
@@ -152,7 +236,7 @@ public class MainActivity extends Activity {
 //        cursor = db.rawQuery("select id from employee where name=gf limit 1", null);
 
 
-        int type;
+//        int type;
 //        for (int i=0; i<cursor.getColumnCount(); ++i){
 //            type = cursor.getType(i);
 //            if (Cursor.FIELD_TYPE_INTEGER == type){
@@ -166,7 +250,7 @@ public class MainActivity extends Activity {
 //        }
 
 //        cursor.close();
-//        employeeDbHelper.close();
+        employeeDbHelper.close();
     }
 
 }
