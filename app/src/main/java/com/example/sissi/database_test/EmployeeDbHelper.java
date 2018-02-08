@@ -62,9 +62,16 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
                     " update department set memberNum=memberNum+1 where id=new.departmentId;\n" +
                     " end;",
         },
+        // 版本6，为department添加触发器，使得department插入时计算其下的人数。（删除时删除其下人数？不要！考虑一个员工可以在多个部门的情形，用外键！？）　　
+        {
+            " create trigger if not exists insertDepTrig after insert on department\n" +
+                    " begin\n" +
+                    " update department set memberNum=(select count(id) from employee where departmentId=new.id)\n" + // 括号必要否则报错.
+                    " where id=new.id;\n" +
+                    " end;",
+        },
+        // TODO 部门删除时员工表的完整性，外键？　　
     };
-
-    private SQLiteDatabase database;
 
     public EmployeeDbHelper(Context context){
         super(context, DB_NAME, null, versionedSqls.length);
@@ -119,7 +126,6 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
     public void onOpen(SQLiteDatabase db) {
         super.onOpen(db);
 //        PcTrace.p("-->");
-        database = db;
     }
 
     // 执行(fromVersion, toVersion]区间内的sql语句

@@ -57,20 +57,6 @@ public class MainActivity extends Activity {
 
 
 //        db.setMaximumSize(1024*1024); // 设置数据库大小上限
-
-        // 插入部门(先插入部门, 这样能保证插入人员时触发器能正确更新部门下成员数) // TODO 可改进使得不关注先后顺序,在部门中加入触发器计算人数.
-        PcTrace.p("--> insert 1000 departments");
-        db.beginTransaction();
-        try{
-            for (ContentValues cv : depCvs){
-                DbUtils.updateOrInsert(db, "department", cv,
-                        "id=?", new String[]{cv.getAsString("id")});
-            }
-            db.setTransactionSuccessful();
-        }finally {
-            db.endTransaction();
-        }
-
         // 插入员工
         PcTrace.p("--> insert 10000 employees");
         db.beginTransaction();
@@ -80,6 +66,20 @@ public class MainActivity extends Activity {
                         "id=?", new String[]{cv.getAsString("id")});
             }
 
+            db.setTransactionSuccessful();
+        }finally {
+            db.endTransaction();
+        }
+
+
+        // 插入部门
+        PcTrace.p("--> insert 1000 departments");
+        db.beginTransaction();
+        try{
+            for (ContentValues cv : depCvs){
+                DbUtils.updateOrInsert(db, "department", cv,
+                        "id=?", new String[]{cv.getAsString("id")});
+            }
             db.setTransactionSuccessful();
         }finally {
             db.endTransaction();
