@@ -70,7 +70,7 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
                     " where id=new.id;\n" +
                     " end;",
         },
-        // TODO 部门删除时员工表的完整性，外键？　　
+        // TODO 部门更改删除时员工表的完整性(考虑一个员工可以在多个部门的情形)，外键？　　
     };
 
     public EmployeeDbHelper(Context context){

@@ -57,20 +57,6 @@ public class MainActivity extends Activity {
 
 
 //        db.setMaximumSize(1024*1024); // 设置数据库大小上限
-        // 插入员工
-        PcTrace.p("--> insert 10000 employees");
-        db.beginTransaction();
-        try {
-            for (ContentValues cv : empCvs){
-                DbUtils.updateOrInsert(db, "employee", cv,
-                        "id=?", new String[]{cv.getAsString("id")});
-            }
-
-            db.setTransactionSuccessful();
-        }finally {
-            db.endTransaction();
-        }
-
 
         // 插入部门
         PcTrace.p("--> insert 1000 departments");
@@ -82,6 +68,27 @@ public class MainActivity extends Activity {
             }
             db.setTransactionSuccessful();
         }finally {
+            db.endTransaction();
+        }
+
+        // 插入员工
+        PcTrace.p("--> insert 10000 employees");
+        db.beginTransaction();
+        try {
+            int i=0;
+            for (ContentValues cv : empCvs){
+//                if (++i==5000){
+//                    throw new RuntimeException("just for test"); // 测试事务回滚（没有一个人被插入）以及触发器回滚（部门下人数为0）
+//                }
+                DbUtils.updateOrInsert(db, "employee", cv,
+                        "id=?", new String[]{cv.getAsString("id")});
+            }
+
+            db.setTransactionSuccessful();
+        }catch (Exception e){
+            PcTrace.p(e.getMessage());
+        }
+        finally {
             db.endTransaction();
         }
 
