@@ -57,6 +57,7 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
                     " update department set memberNum=memberNum-1 where id=old.departmentId;\n" +
                     " end;",
             " create trigger if not exists updateEmpTrig after update of departmentId on employee\n" +
+                    " when old.departmentId != new.departmentId\n" +
                     " begin\n" +
                     " update department set memberNum=memberNum-1 where id=old.departmentId;\n" +
                     " update department set memberNum=memberNum+1 where id=new.departmentId;\n" +

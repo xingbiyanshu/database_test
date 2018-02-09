@@ -51,7 +51,7 @@ public class MainActivity extends Activity {
             contentValues.put("id", i+1);
             contentValues.put("name", "dep_"+(i+1));
             contentValues.put("parentDepartmentId", i%10);
-            contentValues.put("memberNum", 0);
+//            contentValues.put("memberNum", 0);　　// 需要更新的字段才添加进ContentValues否则update时会覆盖掉原来的值　
             depCvs.add(contentValues);
         }
 
@@ -98,7 +98,7 @@ public class MainActivity extends Activity {
         // 更新员工(注意观察部门人数的变化)
         ContentValues tmpCv = new ContentValues();
         tmpCv.put("departmentId", 2);
-        db.update("employee", tmpCv, "id=3", null);
+        db.update("employee", tmpCv, "id=3", null); // 第二次执行时由于departmentId未变updateEmpTrig不会触发。
 
         // 查询部门
         PcTrace.p("--> query department");
