@@ -116,7 +116,8 @@ public class MainActivity extends Activity {
         cursor.close();
 
         // 批量查询员工
-        PcTrace.p("--> batch query 9 employees");
+        long cnt = DbUtils.count(db, "employee", null, null);
+        PcTrace.p("--> total employee count=%s, batch query 9 employees", cnt);
         cursor = db.query("employee", null, null, null,
                 null, null, null, "9");
         PcTrace.p("count=%s", cursor.getCount());
