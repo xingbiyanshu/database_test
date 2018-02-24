@@ -32,7 +32,7 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
                     "email char(32) unique,\n" +
 //                    "departmentId int not null check(0<departmentId),\n" +
 //                    "foreign key(departmentId) references department(id)\n" +
-                    "departmentId int not null check(0<departmentId) references department(id) on delete cascade\n" +
+                    "departmentId int not null check(0<departmentId) references department(id) on delete cascade\n" + // 为employee添加外键约束, 使得employee和department数据一致。如，不能插入departmentId不在department中的employee，删除department时连带删除其下的employee 　　
                     ");\n"
                 ,
         }, // TODO 以一种更便捷的方式创建表　// 这个放在DbHelper中还是其上层有待考量。若按onUpgrade需要见到版本号来看应该放在DbHelper中，但SQLiteDatabase对象需要表名，它应该和DbHelper处在同一层次。
@@ -76,7 +76,7 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
         },
         // 版本7, 为employee添加外键约束, 使得employee和department数据一致。如，不能插入departmentId不在department中的employee，不能删除正在被employee引用的department
             // 即不能删除非空部门 　　
-//        {
+        {
 //            "create table if not exists employee(\n" +
 //                    "id integer primary key autoincrement,\n" +
 //                    "name text not null,\n" +
@@ -89,7 +89,14 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
 //                    "departmentId int not null check(0<departmentId)\n" +
 //                    ");\n"
 //            ,
-//        },
+        },
+        // 版本8，为department添加触发器，使得department删除时删除其子部门。（由于部门和员工表之间有外键约束则删除某个部门时其下人员也会被删除,这正是我们期望的效果）　　
+        {
+            " create trigger if not exists delDepTrig after delete on department\n" +
+                    " begin\n" +
+                    " delete from department where parentDepartmentId=old.id;\n" +
+                    " end;",
+        },
     };
 
     public EmployeeDbHelper(Context context){

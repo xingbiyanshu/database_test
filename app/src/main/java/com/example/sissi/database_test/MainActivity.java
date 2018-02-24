@@ -100,11 +100,12 @@ public class MainActivity extends Activity {
         tmpCv.put("departmentId", 2);
         db.update("employee", tmpCv, "id=3", null); // 第二次执行时由于departmentId未变updateEmpTrig不会触发。
 
-        // 删除部门(注意观察部门下人员也随之删除了,外键的作用使然)
+        // 删除部门(注意观察部门下子部门以及人员也随之删除了,外键以及触发器综合作用的结果)
         db.delete("department", "id=1", null);
 
         // 查询部门
-        PcTrace.p("--> query department");
+        long depCnt = DbUtils.count(db, "department", null, null);
+        PcTrace.p("--> total department count=%s, query department", depCnt);
         Cursor cursor;
 //        cursor = db.query(true, "department", /*new String[]{"id", "parentDepartmentId", ""}*/null, null, null,
 //                null, null, null, "9"); // 使用query，更安全，防止sql注入。
