@@ -32,7 +32,7 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
                     "email char(32) unique,\n" +
 //                    "departmentId int not null check(0<departmentId),\n" +
 //                    "foreign key(departmentId) references department(id)\n" +
-                    "departmentId int not null check(0<departmentId) references department(id)\n" +
+                    "departmentId int not null check(0<departmentId) references department(id) on delete cascade\n" +
                     ");\n"
                 ,
         }, // TODO 以一种更便捷的方式创建表　// 这个放在DbHelper中还是其上层有待考量。若按onUpgrade需要见到版本号来看应该放在DbHelper中，但SQLiteDatabase对象需要表名，它应该和DbHelper处在同一层次。
