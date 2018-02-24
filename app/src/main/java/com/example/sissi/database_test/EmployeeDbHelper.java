@@ -1,7 +1,6 @@
 package com.example.sissi.database_test;
 
 import android.content.Context;
-import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
@@ -12,9 +11,16 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class EmployeeDbHelper extends SQLiteOpenHelper {
     private static final String DB_NAME = "test_db";
 //    private static int VERSION = 2; // 版本升级时递增该数字
+    private static final String onConfigureSqls = "pragma foreign_keys=on;";
     private static final String[][] versionedSqls = new String[][]{ // 不要修改已有的sql语句, 若需求有变更请添加对应的sql语句.
         // 版本1对应的sqls语句。创建员工表和部门表　
         {
+            "create table if not exists department(\n" +
+                    "id integer primary key check(0<id),\n" +
+                    "name text not null,\n" +
+                    "parentDepartmentId integer check(0<=parentDepartmentId)\n" +
+                    ");\n"
+            ,
             "create table if not exists employee(\n" +
                     "id integer primary key autoincrement,\n" +
                     "name text not null,\n" +
@@ -24,14 +30,10 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
                     "address char(128) not null,\n" +
                     "phone char(11) not null unique,\n" +
                     "email char(32) unique,\n" +
-                    "departmentId int not null check(0<departmentId)\n" +
+                    "departmentId int not null check(0<departmentId),\n" +
+                    "foreign key(departmentId) references department(id)\n" +
                     ");\n"
                 ,
-            "create table if not exists department(\n" +
-                    "id integer primary key check(0<id),\n" +
-                    "name text not null,\n" +
-                    "parentDepartmentId integer check(0<=parentDepartmentId)\n" +
-                    ");\n"
         }, // TODO 以一种更便捷的方式创建表　// 这个放在DbHelper中还是其上层有待考量。若按onUpgrade需要见到版本号来看应该放在DbHelper中，但SQLiteDatabase对象需要表名，它应该和DbHelper处在同一层次。
 
         // 版本2新增的sqls语句。版本2会执行版本1和版本2的所有sql语句，版本3会执行版本1,2,3的所有sql语句，类推...
@@ -71,7 +73,22 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
                     " where id=new.id;\n" +
                     " end;",
         },
-        // TODO 部门更改删除时员工表的完整性(考虑一个员工可以在多个部门的情形)，外键？　　
+        // 版本7, 为employee添加外键约束, 使得employee和department数据一致。如，不能插入departmentId不在department中的employee，不能删除正在被employee引用的department
+            // 即不能删除非空部门 　　
+//        {
+//            "create table if not exists employee(\n" +
+//                    "id integer primary key autoincrement,\n" +
+//                    "name text not null,\n" +
+//                    "gender char(6) default 'male' check(gender='male' or gender='female'),\n" +
+//                    "birth int not null check(1960<=birth and birth<=2000),\n" +
+//                    "nativePlace char(128) not null,\n" +
+//                    "address char(128) not null,\n" +
+//                    "phone char(11) not null unique,\n" +
+//                    "email char(32) unique,\n" +
+//                    "departmentId int not null check(0<departmentId)\n" +
+//                    ");\n"
+//            ,
+//        },
     };
 
     public EmployeeDbHelper(Context context){
@@ -86,6 +103,7 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
     @Override
     public void onConfigure(SQLiteDatabase db) {
         super.onConfigure(db);
+        db.execSQL(onConfigureSqls);
 //        PcTrace.p("-->");
     }
 

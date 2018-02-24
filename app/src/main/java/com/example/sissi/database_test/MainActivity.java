@@ -71,7 +71,7 @@ public class MainActivity extends Activity {
             db.endTransaction();
         }
 
-        // 插入员工
+        // 插入员工(插入的员工的部门id必须在部门表中,这有外键约束,所以先插入部门再插入员工)
         PcTrace.p("--> insert 10000 employees");
         db.beginTransaction();
         try {
@@ -146,10 +146,10 @@ public class MainActivity extends Activity {
         }
 
 
-        // 插入记录
+//        // 插入记录
 //        PcTrace.p("--> insert 10000 record");
-
-////        db.beginTransaction();  // 批量插入时开启事务能显著提高效率　
+//
+//        db.beginTransaction();  // 批量插入时开启事务能显著提高效率　
 //        try {
 ////            for (ContentValues values : empCvs) {
 //            for (int i=0; i<empCvs.size(); ++i) {
@@ -197,16 +197,16 @@ public class MainActivity extends Activity {
 //                }
 ////                DbUtils.updateOrInsert(db, "employee", values, "name=?", new String[]{values.getAsString("name")});
 //            }
-////            db.setTransactionSuccessful();
+//            db.setTransactionSuccessful();
 //        }finally { // try finally的方式是事务的标准写法　
-////            db.endTransaction();
+//            db.endTransaction();
 //        }
-
-
+//
+//
 //        PcTrace.p("<-- insert 10000 record");
 
 //        cursor.close();
-        employeeDbHelper.close();
+//        employeeDbHelper.close();
     }
 
 }
