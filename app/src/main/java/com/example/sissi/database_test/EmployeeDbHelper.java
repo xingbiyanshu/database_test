@@ -92,10 +92,16 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
         },
         // 版本8，为department添加触发器，使得department删除时删除其子部门。（由于部门和员工表之间有外键约束则删除某个部门时其下人员也会被删除,这正是我们期望的效果）　　
         {
-            " create trigger if not exists delDepTrig after delete on department\n" +
+            " create trigger if not exists delDepTrig1 after delete on department\n" +
+//                    " when old.id!=1\n"+
                     " begin\n" +
-                    " delete from department where parentDepartmentId=old.id;\n" +
+                    " delete from department where parentDepartmentId=old.id;\n" + // TODO 触发器类的删除操作不会再次触发该触发器,如何才能使之递归触发呢? 比如1->2->3.当前删除根部的1只能触发删除2,如何能达到删除根部1其子2其孙3均被删除的目的呢?
                     " end;",
+//            " create trigger if not exists delDepTrig2 after delete on department\n" + // sqlite对触发器语法支持较弱,不允许使用if,只能通过这种笨拙的方式定义多个触发器
+//                    " when old.id!=2\n"+
+//                    " begin\n" +
+//                    " delete from department where parentDepartmentId=old.id;\n" +
+//                    " end;",
         },
     };
 
