@@ -20,10 +20,10 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
         // 版本1对应的sqls语句。创建员工表和部门表　
         {
             "create table if not exists department(\n" +
-                    "id integer primary key check(0<id),\n" +
+                    "id integer primary key check(0<=id),\n" +
                     "name text not null,\n" +
-                    "parentDepartmentId integer check(0<=parentDepartmentId)\n" +
-//                    "parentDepartmentId integer check(0<=parentDepartmentId) references department(id) on delete cascade\n" +　// 同一张表内也可使用父键约束（对比不同表间外键约束）　
+//                    "parentDepartmentId integer check(0<=parentDepartmentId)\n" +
+                    "parentDepartmentId integer check(0<=parentDepartmentId) references department(id) on delete cascade\n" + // 同一张表内也可使用父键约束（对比不同表间外键约束）　
                     ");\n"
             ,
             "create table if not exists employee(\n" +
@@ -76,6 +76,7 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
         // 版本6，为department添加触发器，使得department插入时计算其下的人数。（删除时删除其下人数？不要！考虑一个员工可以在多个部门的情形，用外键！？）　　
         {
             " create trigger if not exists insertDepTrig after insert on department\n" +
+                    " when new.id!=0\n" + // 0号部门是虚拟的根部门
                     " begin\n" +
                     " update department set memberNum=(select count(id) from employee where departmentId=new.id)\n" + // 括号必要否则报错.
                     " where id=new.id;\n" +
@@ -99,12 +100,12 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
         },
         // 版本8，为department添加触发器，使得department删除时删除其子部门。（由于部门和员工表之间有外键约束则删除某个部门时其下人员也会被删除,这正是我们期望的效果）　　
         {
-            " create trigger if not exists delDepTrig1 after delete on department\n" +
-                    " FOR EACH ROW\n" +
-//                    " when old.id!=1\n"+
-                    " begin\n" +
-                    " delete from department where parentDepartmentId=old.id;\n" + // 默认情况下触发器的删除操作不会再次触发该触发器,如何才能使之递归触发呢? 比如1->2->3.当前删除根部的1只能触发删除2,如何能达到删除根部1其子2其孙3均被删除的目的呢? 有两种方式: 方式一、使用类似外键约束(在同一张表的不同字段之间也可使用)；方式二、开启递归触发器"PRAGMA recursive_triggers = ON;"
-                    " end;",
+//            " create trigger if not exists delDepTrig1 after delete on department\n" +
+//                    " FOR EACH ROW\n" +
+////                    " when old.id!=1\n"+
+//                    " begin\n" +
+//                    " delete from department where parentDepartmentId=old.id;\n" + // 默认情况下触发器的删除操作不会再次触发该触发器,如何才能使之递归触发呢? 比如1->2->3.当前删除根部的1只能触发删除2,如何能达到删除根部1其子2其孙3均被删除的目的呢? 有两种方式: 方式一、使用类似外键约束(在同一张表的不同字段之间也可使用)；方式二、开启递归触发器"PRAGMA recursive_triggers = ON;"
+//                    " end;",
 //            " create trigger if not exists delDepTrig2 after delete on department\n" + // sqlite对触发器语法支持较弱,不允许使用if,只能通过这种笨拙的方式定义多个触发器
 //                    " when old.id!=2\n"+
 //                    " begin\n" +

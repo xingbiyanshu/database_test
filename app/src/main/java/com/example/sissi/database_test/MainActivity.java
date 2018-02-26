@@ -46,6 +46,12 @@ public class MainActivity extends Activity {
         }
 
         final List<ContentValues> depCvs = new ArrayList<>();
+        // 创建一个虚拟的＂根部门＂，类似根目录"/"，以满足department表的完整性约束。
+        ContentValues rootDep = new ContentValues();
+        rootDep.put("id", 0);
+        rootDep.put("name", "dep_"+0);
+        rootDep.put("parentDepartmentId", 0);
+        depCvs.add(rootDep);
         for (int i=0; i<1000; ++i){
             ContentValues contentValues = new ContentValues();
             contentValues.put("id", i+1);
@@ -58,7 +64,7 @@ public class MainActivity extends Activity {
 
 //        db.setMaximumSize(1024*1024); // 设置数据库大小上限
 
-        // 插入部门
+        // 插入部门(部门的父部门字段存在完整性约束,必须已存在于数据库中,所以插入部门的顺序需要注意先插父部门再插子部门).
         PcTrace.p("--> insert 1000 departments");
         db.beginTransaction();
         try{
