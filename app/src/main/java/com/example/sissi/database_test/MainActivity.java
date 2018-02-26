@@ -80,6 +80,7 @@ public class MainActivity extends Activity {
 //                if (++i==5000){
 //                    throw new RuntimeException("just for test"); // 测试事务回滚（没有一个人被插入）以及触发器回滚（部门下人数为0）
 //                }
+
                 DbUtils.updateOrInsert(db, "employee", cv,
                         "id=?", new String[]{cv.getAsString("id")});
             }
@@ -101,7 +102,7 @@ public class MainActivity extends Activity {
         db.update("employee", tmpCv, "id=3", null); // 第二次执行时由于departmentId未变updateEmpTrig不会触发。
 
         // 删除部门(注意观察部门下子部门以及人员也随之删除了,外键以及触发器综合作用的结果)
-        db.delete("department", "id=1", null);
+        db.delete("department", "id=2", null);
 
         // 查询部门
         long depCnt = DbUtils.count(db, "department", null, null);

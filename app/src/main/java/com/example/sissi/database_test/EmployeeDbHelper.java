@@ -11,14 +11,19 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class EmployeeDbHelper extends SQLiteOpenHelper {
     private static final String DB_NAME = "test_db";
 //    private static int VERSION = 2; // 版本升级时递增该数字
-    private static final String onConfigureSqls = "pragma foreign_keys=on;";
-    private static final String[][] versionedSqls = new String[][]{ // 不要修改已有的sql语句, 若需求有变更请添加对应的sql语句.
+    private static final String[] configures = new String[]{
+        "pragma foreign_keys=on;", // 开启外键约束　
+        "PRAGMA recursive_triggers = ON;", // 开启递归触发器
+    };
+
+    private static final String[][] ddls = new String[][]{ // 不要修改已有的sql语句, 若需求有变更请添加对应的sql语句.
         // 版本1对应的sqls语句。创建员工表和部门表　
         {
             "create table if not exists department(\n" +
                     "id integer primary key check(0<id),\n" +
                     "name text not null,\n" +
                     "parentDepartmentId integer check(0<=parentDepartmentId)\n" +
+//                    "parentDepartmentId integer check(0<=parentDepartmentId) references department(id) on delete cascade\n" +　// 同一张表内也可使用父键约束（对比不同表间外键约束）　
                     ");\n"
             ,
             "create table if not exists employee(\n" +
@@ -32,7 +37,9 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
                     "email char(32) unique,\n" +
 //                    "departmentId int not null check(0<departmentId),\n" +
 //                    "foreign key(departmentId) references department(id)\n" +
-                    "departmentId int not null check(0<departmentId) references department(id) on delete cascade\n" + // 为employee添加外键约束, 使得employee和department数据一致。如，不能插入departmentId不在department中的employee，删除department时连带删除其下的employee 　　
+                    "departmentId int not null check(0<departmentId) references department(id) on delete cascade\n" + // 为employee添加外键约束, 使得employee和department数据一致。
+                    // 如，不能插入departmentId不在department中的employee，删除department时连带删除其下的employee(需添加"on delete cascade"后缀,
+                    // 否则会执行默认的行为,即不允许删除其下有employee的department) 　　
                     ");\n"
                 ,
         }, // TODO 以一种更便捷的方式创建表　// 这个放在DbHelper中还是其上层有待考量。若按onUpgrade需要见到版本号来看应该放在DbHelper中，但SQLiteDatabase对象需要表名，它应该和DbHelper处在同一层次。
@@ -93,9 +100,10 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
         // 版本8，为department添加触发器，使得department删除时删除其子部门。（由于部门和员工表之间有外键约束则删除某个部门时其下人员也会被删除,这正是我们期望的效果）　　
         {
             " create trigger if not exists delDepTrig1 after delete on department\n" +
+                    " FOR EACH ROW\n" +
 //                    " when old.id!=1\n"+
                     " begin\n" +
-                    " delete from department where parentDepartmentId=old.id;\n" + // TODO 触发器类的删除操作不会再次触发该触发器,如何才能使之递归触发呢? 比如1->2->3.当前删除根部的1只能触发删除2,如何能达到删除根部1其子2其孙3均被删除的目的呢?
+                    " delete from department where parentDepartmentId=old.id;\n" + // 默认情况下触发器的删除操作不会再次触发该触发器,如何才能使之递归触发呢? 比如1->2->3.当前删除根部的1只能触发删除2,如何能达到删除根部1其子2其孙3均被删除的目的呢? 有两种方式: 方式一、使用类似外键约束(在同一张表的不同字段之间也可使用)；方式二、开启递归触发器"PRAGMA recursive_triggers = ON;"
                     " end;",
 //            " create trigger if not exists delDepTrig2 after delete on department\n" + // sqlite对触发器语法支持较弱,不允许使用if,只能通过这种笨拙的方式定义多个触发器
 //                    " when old.id!=2\n"+
@@ -106,7 +114,7 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
     };
 
     public EmployeeDbHelper(Context context){
-        super(context, DB_NAME, null, versionedSqls.length);
+        super(context, DB_NAME, null, ddls.length);
     }
 
     /* 创建Helper对象时并不会触发下面任何一个回调（实际只是做了一些赋值操作），当通过Helper对象获取数据库对象时才会触发如下回调。
@@ -117,8 +125,10 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
     @Override
     public void onConfigure(SQLiteDatabase db) {
         super.onConfigure(db);
-        db.execSQL(onConfigureSqls);
 //        PcTrace.p("-->");
+        for (int i=0; i<configures.length; ++i) {
+            db.execSQL(configures[i]);
+        }
     }
 
 
@@ -128,7 +138,7 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
         //　创建表的合适时机是在数据库创建时，所以下面创建表．
         // 注意，覆盖安装（或在线升级）后由于数据库已经存在（不应该删除，因为有用户数据）故不会再走该回调。
         // 走该回调时数据库版本总是0
-        execSqls(db, 0, versionedSqls.length);
+        execSqls(db, 0, ddls.length);
     }
 
     @Override
@@ -168,8 +178,8 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
 //            return;
 //        }
         for (int i=fromVersion; i<toVersion; ++i) {
-            for (int j = 0; j< versionedSqls[i].length; ++j) {
-                db.execSQL(versionedSqls[i][j]);
+            for (int j = 0; j< ddls[i].length; ++j) {
+                db.execSQL(ddls[i][j]);
             }
         }
     }
