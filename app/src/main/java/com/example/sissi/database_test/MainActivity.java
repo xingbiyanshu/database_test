@@ -81,15 +81,28 @@ public class MainActivity extends Activity {
         PcTrace.p("--> insert 10000 employees");
         db.beginTransaction();
         try {
-            int i=0;
-            for (ContentValues cv : empCvs){
-//                if (++i==5000){
+            db.beginTransaction();
+            try {
+                int i = 0;
+                for (ContentValues cv : empCvs) {
+                if (++i==5000){
 //                    throw new RuntimeException("just for test"); // 测试事务回滚（没有一个人被插入）以及触发器回滚（部门下人数为0）
-//                }
+                    PcTrace.p("employee count=%s", DbUtils.count(db, "employee", null, null)); // 此处打印出已插入的人数，后面事务回滚后再次查询对比
+                }
 
-                DbUtils.updateOrInsert(db, "employee", cv,
-                        "id=?", new String[]{cv.getAsString("id")});
+                    DbUtils.updateOrInsert(db, "employee", cv,
+                            "id=?", new String[]{cv.getAsString("id")});
+                }
+                db.setTransactionSuccessful();
+            }catch (Exception e){
+
+            }finally {
+                db.endTransaction();
             }
+
+//            if (true) {
+//                throw new RuntimeException("for test savepoint"); // 测试嵌套事务回滚。期望的行为是此处抛出异常后内部嵌套的事务亦会被回滚。
+//            }
 
             db.setTransactionSuccessful();
         }catch (Exception e){
