@@ -71,6 +71,7 @@ public class MainActivity extends Activity {
         super.onResume();
         if (null == db){
             db = employeeDbHelper.getWritableDatabase();
+//            db.isInMemoryDatabase();
             handler.sendEmptyMessage(req1);
         }
     }
@@ -85,7 +86,7 @@ public class MainActivity extends Activity {
     private void callback(int rsp){
         switch(rsp){
             case rsp1:
-                db.beginTransaction();
+//                db.beginTransaction();
                 saveDepartments();
                 queryDepartments();
                 handler.sendEmptyMessage(req2);
@@ -93,8 +94,8 @@ public class MainActivity extends Activity {
             case rsp2:
                 saveEmployees();
                 queryEmployees();
-                db.setTransactionSuccessful();
-                db.endTransaction();
+//                db.setTransactionSuccessful();
+//                db.endTransaction();
                 handler.sendEmptyMessage(req3);
                 break;
             case rsp3:

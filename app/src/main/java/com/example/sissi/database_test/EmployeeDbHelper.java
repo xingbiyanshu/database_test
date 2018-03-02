@@ -9,7 +9,7 @@ import android.database.sqlite.SQLiteOpenHelper;
  */
 
 public class EmployeeDbHelper extends SQLiteOpenHelper {
-    private static final String DB_NAME = "test_db";
+    private static final String DB_NAME = "organization.db";
 //    private static int VERSION = 2; // 版本升级时递增该数字
     private static final String[] configures = new String[]{
         "pragma foreign_keys=on;", // 开启外键约束　
@@ -112,10 +112,15 @@ public class EmployeeDbHelper extends SQLiteOpenHelper {
 //                    " delete from department where parentDepartmentId=old.id;\n" +
 //                    " end;",
         },
+
+
     };
 
     public EmployeeDbHelper(Context context){
-        super(context, DB_NAME, null, ddls.length);
+        super(context,
+                DB_NAME, /*null,*/ // name设为null则建立临时数据库--在内存中,程序退出即丢失.内存数据库由于不用访问磁盘, 所以对于大量访问磁盘的场景,如大量插入更新操作(未批量操作并开启事务),性能上有很大提升(主要提升的是磁盘访问这块, 如果批量更新并启用了事务,由于数据一次性写入磁盘,磁盘访问少,则此种情形性能提升不大)
+                null,
+                ddls.length);
     }
 
     /* 创建Helper对象时并不会触发下面任何一个回调（实际只是做了一些赋值操作），当通过Helper对象获取数据库对象时才会触发如下回调。
